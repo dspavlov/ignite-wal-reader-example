@@ -2,6 +2,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.demo.SomeBusinessObject;
 import org.apache.ignite.Ignite;
@@ -45,6 +46,10 @@ public class WalFillerExample {
         pstCfg.setWalSegments(2); // for faster archive
         pstCfg.setWalMode(WALMode.BACKGROUND);
         cfg.setPersistentStoreConfiguration(pstCfg);
+
+        final MemoryConfiguration memCfg = new MemoryConfiguration();
+        memCfg.setPageSize(4096);
+        cfg.setMemoryConfiguration(memCfg);
 
         cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVED);
 

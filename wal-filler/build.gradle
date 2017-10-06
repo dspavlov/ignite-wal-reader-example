@@ -16,5 +16,5 @@ repositories {
 dependencies {
     compile group: 'javax.cache', name: 'cache-api', version: '1.0.0'
 
-    compile group: 'org.apache.ignite', name: 'ignite-core', version: '2.1.5'
+    compile group: 'org.apache.ignite', name: 'ignite-core', version: '2.1.3'
 }
