@@ -1,0 +1,20 @@
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url 'http://www.gridgainsystems.com/nexus/content/repositories/external/'
+    }
+}
+
+dependencies {
+    compile group: 'javax.cache', name: 'cache-api', version: '1.0.0'
+
+    compile group: 'org.apache.ignite', name: 'ignite-core', version: '2.1.5'
+}
