@@ -1,0 +1,19 @@
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'javax.cache', name: 'cache-api', version: '1.0.0'
+
+    //to run this example it is required to have business object classes in classpath
+    runtime files("dump-classes")
+
+    compile files('libs/ignite-core-2.3.0-SNAPSHOT.jar')
+}
