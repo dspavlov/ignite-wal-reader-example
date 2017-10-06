@@ -138,7 +138,9 @@ public class WalReaderExample {
                 Object val = lazyDataEntry.unwrappedValue();
                 System.out.println(lazyDataEntry.op() + " found for entry (" + key + "->" + val + ")");
                 handleObject(key);
-                handleObject(val);
+
+                if (val != null) //value is absent for DELETE entries
+                    handleObject(val);
             }
             if (globalTxId != null)
                 uniqueTxFound.merge(globalTxId, 1, (i, j) -> i + j);
