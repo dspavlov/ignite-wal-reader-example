@@ -1,4 +1,4 @@
-package ord.demo;
+package org.demo;
 
 /**
  * Emulates business object

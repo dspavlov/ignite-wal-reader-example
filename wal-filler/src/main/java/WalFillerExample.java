@@ -2,7 +2,8 @@ import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import ord.demo.SomeBusinessObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.demo.SomeBusinessObject;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -25,8 +26,11 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
  */
 public class WalFillerExample {
     public static void main(String[] args) {
-        final String path = new File("./persistent_store").getAbsolutePath();
-        System.out.println("Use following path as work:" + path);
+        final File persistentStore = new File("./persistent_store");
+        final String path = persistentStore.getAbsolutePath();
+        System.out.println("Use following path as work:" + path + ", Run clean procedure");
+
+        U.delete(persistentStore);
 
         final IgniteConfiguration cfg = new IgniteConfiguration();
 
