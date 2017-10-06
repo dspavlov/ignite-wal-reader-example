@@ -1,8 +1,8 @@
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import ord.demo.SomeBusinessObject;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -11,11 +11,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.transactions.Transaction;
@@ -28,14 +26,17 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 public class WalFillerExample {
     public static void main(String[] args) {
         final String path = new File("./persistent_store").getAbsolutePath();
-        System.out.println("Use following as work:" + path);
+        System.out.println("Use following path as work:" + path);
+
         final IgniteConfiguration cfg = new IgniteConfiguration();
+
         cfg.setConsistentId("127_0_0_1_47500");
         cfg.setWorkDirectory(path);
 
         setupDisco(cfg);
 
         final PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
+
         pstCfg.setWalSegmentSize(1024 * 1024);
         pstCfg.setWalSegments(2); // for faster archive
         pstCfg.setWalMode(WALMode.BACKGROUND);
@@ -47,7 +48,7 @@ public class WalFillerExample {
         try {
             ignite.active(true);
 
-            genereareLoad(ignite);
+            generateLoad(ignite);
 
             ignite.active(false);
         }
@@ -56,28 +57,30 @@ public class WalFillerExample {
         }
     }
 
-    private static void genereareLoad(Ignite ignite) {
-        final AtomicInteger segmentsInArchive = new AtomicInteger();
-        ignite.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event e) {
-                WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
-                long idx = archComplEvt.getAbsWalSegmentIdx();
-                System.out.println("Finished archive for segment [" + idx + ", " +
-                    archComplEvt.getArchiveFile() + "]: [" + e + "]");
+    /**
+     * Fills data into node, waits for segment achieved
+     * @param ignite ignite to save data
+     */
+    private static void generateLoad(Ignite ignite) {
+        A.ensure(ignite.events().isEnabled(EVT_WAL_SEGMENT_ARCHIVED), "Event not enabled");
 
-                segmentsInArchive.incrementAndGet();
-                return true;
-            }
+        final AtomicInteger segmentsInArchive = new AtomicInteger();
+
+        ignite.events().localListen(event -> {
+            WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)event;
+            long idx = archComplEvt.getAbsWalSegmentIdx();
+            System.out.println("Finished archive for segment [" + idx + ", " +
+                archComplEvt.getArchiveFile() + "]: [" + event + "]");
+
+            segmentsInArchive.incrementAndGet();
+            return true;
         }, EVT_WAL_SEGMENT_ARCHIVED);
 
         final CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>();
-
         cacheCfg.setName("my-cache1");
         cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         final IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheCfg);
-
-        A.ensure(ignite.events().isEnabled(EVT_WAL_SEGMENT_ARCHIVED), "Event not enabled");
 
         final ThreadLocalRandom tlr = ThreadLocalRandom.current();
         final int requiredSegments = 1;
@@ -87,11 +90,14 @@ public class WalFillerExample {
                     final int nextInt = tlr.nextInt();
                     final String key = "Key" + nextInt;
 
-                    cache.put(key, "Value");
+                    //emulate create
+                    cache.put(key, new SomeBusinessObject("Value", nextInt));
 
+                    //emulate update
                     if (nextInt % 3 == 0)
-                        cache.put(key, "Value for divisible by 3");
+                        cache.put(key, new SomeBusinessObject("Value for divisible by 3", nextInt));
 
+                    //emulate delete
                     if (nextInt % 5 == 0)
                         cache.remove(key);
                 }
