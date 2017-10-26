@@ -200,8 +200,14 @@ public class WalReaderExample {
             case PREPARING:
                 //here special handling may be inserted for transaction prepare action
                 break;
-            case COMMITTING:
+            case PREPARED:
+                //here special handling may be inserted for transaction prepare action
+                break;
+            case COMMITTED:
                 //here special handling may be inserted for transaction commit action
+                break;
+            case ROLLED_BACK:
+                //here special handling may be inserted for transaction rollback action successed
                 break;
         }
         writer.write("//Tx Record, action: " + act +
