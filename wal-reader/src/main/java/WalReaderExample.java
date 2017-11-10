@@ -127,16 +127,19 @@ public class WalReaderExample {
 
         for (DataEntry entry : entries) {
             final GridCacheVersion globalTxId = entry.nearXidVersion();
+            final GridCacheVersion version = entry.writeVersion();
+
 
             writer.write("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
-                "under transaction: " + globalTxId + "; "  + ENDL);
+                "under transaction: " + globalTxId + "; write version: " + version + ";"  + ENDL);
 
             //after successful unmarshalling all entries should be already unwrapped
             if (entry instanceof UnwrapDataEntry) {
                 final UnwrapDataEntry lazyDataEntry = (UnwrapDataEntry)entry;
                 Object key = lazyDataEntry.unwrappedKey();
                 Object val = lazyDataEntry.unwrappedValue();
-                System.out.println(lazyDataEntry.op() + " found for entry (" + key + "->" + val + ")");
+                System.out.println(lazyDataEntry.op() + " found for entry (" + key + "->" + val + "): "
+                 + "write version: " + version);
                 handleObject(key);
 
                 if (val != null) //value is absent for DELETE entries
