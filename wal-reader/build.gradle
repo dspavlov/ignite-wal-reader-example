@@ -20,8 +20,11 @@ dependencies {
     runtime files("./wal-filler/build/classes/main")
 
     boolean local = false
-    if (local)
-        compile files('libs/ignite-core-2.3.0-SNAPSHOT.jar')
-    else
+    if (local) {
+        compile files('libs/ignite-core-2.3.0-SNAPSHOT.jar');
+        compile files('libs/ignite-indexing-2.3.0-SNAPSHOT.jar');
+    } else {
         compile group: 'org.apache.ignite', name: 'ignite-core', version: '2.1.6'
+        compile group: 'org.apache.ignite', name: 'ignite-indexing', version: '2.1.6'
+    }
 }

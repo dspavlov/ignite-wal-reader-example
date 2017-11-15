@@ -16,12 +16,17 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.transactions.TransactionState;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
 
 /**
  * This example demonstrates how to iterate over archive WAL segments with special handling of Logical records
@@ -46,13 +51,16 @@ public class WalReaderExample {
      */
     public static void main(String[] args) throws Exception {
         //Archive WAL segments folder including consistent ID
-        final File walFilesFolder = new File("./persistent_store/db/wal/archive/127_0_0_1_47500");
+        final File workDir = new File("./persistent_store"); //"C:/projects/ignite-examples/work"); //"./persistent_store/");
+        final String consIdEscaped = "127_0_0_1_47500"; //"0_0_0_0_0_0_0_1_127_0_0_1_192_168_43_201_33333";
+
+        final File walFilesArchFolder = new File(new File(workDir, "db/wal/archive"), consIdEscaped);
 
         //Binary metadata folder including consistent ID
-        final File binaryMeta = new File("./persistent_store/binary_meta/127_0_0_1_47500");
+        final File binaryMeta = new File(new File(workDir, "binary_meta"), consIdEscaped);
 
         //Marshaller cache folder
-        final File marshaller = new File("./persistent_store/marshaller");
+        final File marshaller = new File(workDir, "marshaller");
 
         // Text file for output results
         final File outputDumpFile = new File("wal.dump.txt");
@@ -61,6 +69,10 @@ public class WalReaderExample {
         final int pageSize = 4096;
 
         final JavaLogger log = new JavaLogger();
+
+        PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
+        H2ExtrasInnerIO.register();
+        H2ExtrasLeafIO.register();
 
         //this flags disables unmarshalling (unwrapping) binary objects into original object
         final boolean keepBinary = true;
@@ -72,8 +84,8 @@ public class WalReaderExample {
             marshaller,
             keepBinary);
 
-        final File[] walFileList = walFilesFolder.listFiles((dir, name) -> name.endsWith(".wal"));
-        A.ensure(walFileList != null, "Can't find any segments in [" + walFilesFolder + "]");
+        final File[] walFileList = walFilesArchFolder.listFiles((dir, name) -> name.endsWith(".wal"));
+        A.ensure(walFileList != null, "Can't find any segments in [" + walFilesArchFolder + "]");
         int cnt = 0;
         final Map<GridCacheVersion, Integer> uniqueTxFound = new HashMap<>();
         int cntEntries = 0;
@@ -100,7 +112,7 @@ public class WalReaderExample {
             }
         }
         System.out.println(
-            "Data from WAL archive [" + walFilesFolder.getAbsolutePath() + "]" +
+            "Data from WAL archive [" + walFilesArchFolder.getAbsolutePath() + "]" +
                 " was converted to [" + outputDumpFile.getAbsolutePath() + "]");
         System.out.println(cnt + " WAL records were processed ");
         System.out.println(cntEntries + " entry operations was found under ");
