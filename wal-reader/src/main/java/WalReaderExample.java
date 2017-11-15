@@ -42,6 +42,7 @@ public class WalReaderExample {
 
     /** Type name of class which used for test. */
     private static final String TYPE_NAME = "org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IndexedObject";
+    public static final boolean dump = false;
 
     /**
      * Main example entry point
@@ -51,8 +52,10 @@ public class WalReaderExample {
      */
     public static void main(String[] args) throws Exception {
         //Archive WAL segments folder including consistent ID
-        final File workDir = new File("./persistent_store"); //"C:/projects/ignite-examples/work"); //"./persistent_store/");
-        final String consIdEscaped = "127_0_0_1_47500"; //"0_0_0_0_0_0_0_1_127_0_0_1_192_168_43_201_33333";
+        final File workDir = new File("./persistent_store/"); // "./persistent_store/");
+        //"C:/projects/ignite-examples/work"
+        final String consIdEscaped = "127_0_0_1_47500"; // "127_0_0_1_47500";
+        // "0_0_0_0_0_0_0_1_127_0_0_1_192_168_43_201_33333"
 
         final File walFilesArchFolder = new File(new File(workDir, "db/wal/archive"), consIdEscaped);
 
@@ -117,7 +120,7 @@ public class WalReaderExample {
         System.out.println(cnt + " WAL records were processed ");
         System.out.println(cntEntries + " entry operations was found under ");
         System.out.println(uniqueTxFound.size() + " transactions");
-        uniqueTxFound.entrySet().forEach(e-> System.out.println(" -> Transactional entries "+ e));
+        // uniqueTxFound.entrySet().forEach(e-> System.out.println(" -> Transactional entries "+ e));
 
     }
 
@@ -150,8 +153,9 @@ public class WalReaderExample {
                 final UnwrapDataEntry lazyDataEntry = (UnwrapDataEntry)entry;
                 Object key = lazyDataEntry.unwrappedKey();
                 Object val = lazyDataEntry.unwrappedValue();
-                System.out.println(lazyDataEntry.op() + " found for entry (" + key + "->" + val + "): "
-                 + "write version: " + version);
+                if (dump)
+                    System.out.println(lazyDataEntry.op() + " found for entry (" + key + "->" + val + "): "
+                        + "write version: " + version);
                 handleObject(key);
 
                 if (val != null) //value is absent for DELETE entries
@@ -188,15 +192,21 @@ public class WalReaderExample {
 
             //see also https://apacheignite.readme.io/docs/binary-marshaller#binaryobject-cache-api for more info
 
-            System.out.print("\tBinary object fields: ");
+            if (dump)
+                System.out.print("\tBinary object fields: ");
             for (String fieldName : type.fieldNames()) {
                 Object field = binaryObj.field(fieldName);
-                System.out.print(fieldName +" (" + type.fieldTypeName(fieldName) + ") = " + field + ", ");
+                if (dump)
+                    System.out.print(fieldName + " (" + type.fieldTypeName(fieldName) + ") = " + field + ", ");
             }
-            System.out.println();
+            if (dump)
+                System.out.println();
+
         }
-        else
-            System.out.println("\tGeneric value: ("+v.getClass().getSimpleName()+") = " + v);
+        else {
+            if (dump)
+                System.out.println("\tGeneric value: (" + v.getClass().getSimpleName() + ") = " + v);
+        }
     }
 
     /**
