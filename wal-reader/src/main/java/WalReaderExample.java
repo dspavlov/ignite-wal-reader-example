@@ -19,14 +19,14 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.logger.java.JavaLogger;
-import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.transactions.TransactionState;
 
 /**
  * This example demonstrates how to iterate over archive WAL segments with special handling of Logical records
@@ -90,6 +90,7 @@ public class WalReaderExample {
         final File[] walFileList = walFilesArchFolder.listFiles((dir, name) -> name.endsWith(".wal"));
         A.ensure(walFileList != null, "Can't find any segments in [" + walFilesArchFolder + "]");
         int cnt = 0;
+        final Map<GridCacheVersion, Integer> uniqueTxMarkersFound = new HashMap<>();
         final Map<GridCacheVersion, Integer> uniqueTxFound = new HashMap<>();
         int cntEntries = 0;
 
@@ -106,7 +107,7 @@ public class WalReaderExample {
                     }
                     else if (walRecord.type() == WALRecord.RecordType.TX_RECORD && walRecord instanceof TxRecord) {
                         final TxRecord txRecord = (TxRecord)walRecord;
-                        handleTxRecord(writer, txRecord);
+                        handleTxRecord(writer, txRecord, uniqueTxMarkersFound);
                     }
                     writer.write(walRecord.toString() + ENDL);
 
@@ -121,7 +122,7 @@ public class WalReaderExample {
         System.out.println(cntEntries + " entry operations was found under ");
         System.out.println(uniqueTxFound.size() + " transactions");
         // uniqueTxFound.entrySet().forEach(e-> System.out.println(" -> Transactional entries "+ e));
-
+        uniqueTxMarkersFound.entrySet().forEach(e-> System.out.println(" -> Transactional markers for tx: "+ e));
     }
 
     /**
@@ -215,9 +216,11 @@ public class WalReaderExample {
      *
      * @param writer output for action comments
      * @param txRecord record to process
+     * @param uniqueTxMarkersFound markers found in TX
      * @throws IOException if failed to prepare file output
      */
-    private static void handleTxRecord(Writer writer, TxRecord txRecord) throws IOException {
+    private static void handleTxRecord(Writer writer, TxRecord txRecord,
+        Map<GridCacheVersion, Integer> uniqueTxMarkersFound) throws IOException {
         final GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
         final TransactionState act = txRecord.state();
@@ -235,7 +238,13 @@ public class WalReaderExample {
                 //here special handling may be inserted for transaction rollback action successed
                 break;
         }
-        writer.write("//Tx Record, action: " + act +
-            "; nearTxVersion" + globalTxId + ENDL);
+
+        final Map<Object, Collection<Object>> nodes = txRecord.participatingNodes();
+        final Integer merge = uniqueTxMarkersFound.merge(globalTxId, 1, (i, j) -> i + j);
+
+        writer.write("// " + merge + "th: Tx Record, action: " + act +
+            "; " +
+            nodes + "; " +
+            "nearTxVersion" + globalTxId + ENDL);
     }
 }
