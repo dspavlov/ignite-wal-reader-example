@@ -2,6 +2,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.demo.SomeBusinessObject;
@@ -52,6 +53,8 @@ public class WalFillerExample {
         cfg.setMemoryConfiguration(memCfg);
 
         cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVED);
+
+        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 
         final Ignite ignite = Ignition.start(cfg);
         try {
